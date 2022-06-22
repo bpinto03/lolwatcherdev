@@ -1,0 +1,54 @@
+  _____             _    _             
+ |  __ \           | |  (_)            
+ | |__) |__ _ _ __ | | ___ _ __   __ _ 
+ |  _  // _` | '_ \| |/ / | '_ \ / _` |
+ | | \ \ (_| | | | |   <| | | | | (_| |
+ |_|  \_\__,_|_| |_|_|\_\_|_| |_|\__, |
+                                  __/ |
+                                 |___/ 
+ 
+Test division conversion value from letter to number
+
+    >>> from Ranking import Ranking
+    >>> [Ranking.division_value(div) for div in Ranking.DIVISION]
+    [4, 3, 2, 1]
+
+Test incorrect value
+
+    >>> Ranking.rank_to_LP('PLATINUM', 'IV', '-1')
+    Traceback (most recent call last):
+        ...
+    ValueError: lp should be between 0 and 99 for low elo
+
+    >>> Ranking.rank_to_LP('IRON', 'II', '1000')
+    Traceback (most recent call last):
+        ...
+    ValueError: lp should be between 0 and 99 for low elo
+
+    >>> Ranking.rank_to_LP('GOLD', 'VI', '55')
+    Traceback (most recent call last):
+        ...
+    ValueError: VI division do not exist
+
+Test rank conversion
+
+    >>> Ranking.rank_to_LP('IRON', 'IV', '0')
+    0
+    >>> Ranking.rank_to_LP('DIAMOND', 'I', '99')
+    2399
+    >>> Ranking.rank_to_LP('MASTER', 'I', '0')
+    2400
+    >>> Ranking.rank_to_LP('GOLD', 'II', '37')
+    1437
+
+Test LP conversion
+
+    >>> Ranking.LP_to_rank(0)
+    {'tier': 'IRON', 'division': 'IV', 'lp': '0'}
+    >>> Ranking.LP_to_rank(2399)
+    {'tier': 'DIAMOND', 'division': 'I', 'lp': '99'}
+    >>> Ranking.LP_to_rank(2400)
+    {'tier': 'MASTER', 'lp': '0'}
+    >>> Ranking.LP_to_rank(1437)
+    {'tier': 'GOLD', 'division': 'II', 'lp': '37'}
+    
