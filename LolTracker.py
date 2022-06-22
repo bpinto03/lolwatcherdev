@@ -149,15 +149,34 @@ async def send_help(ctx):
     """
     help_message = """```\n========================= My command list =========================
 Basic commands :
+    *rank [username] - Aliases : rang / elo
+        Show username's elo.
+        
     *usage - Aliases
         Send this message
         
-    *rank username - Aliases : rang / elo
-        Show username's elo.
+Ranking commands:
+    *addPlayerRanking [username] - Aliases : apr
+        Add player to the ranking system. 
         
-Classment commands:
+    *clearLPRanking - Aliases : clpr / clearlpranking
+        Clear lp of all players in ranking. (Manage messages right is necessary)
+    
+    *displayPlayersRegisteredRanking [optional - username] - Aliases : dprr
+        If username is not filled, it display every username registered in ranking else, it display if the username is registered or not.
+        
+    *displayRanking - Aliases : dispR / dr
+        Display a ranking of players that won more lp on the day. When you first register a player, is LP gained is 0, we do not see past games.
+    
+    *removePlayerRanking [username] - Aliases : rpr
+        Remove username from ranking system.
+    
+    *resetRanking - Aliases  : rr
+        Reset all player of ranking system. (Kick user right is necessary)
+    
     *setChannelDiffusion - Aliases : scd / setcd
         Set this channel diffusion for LP ranking. (Manage channel right is necessary)
+        
 ```"""
     await ctx.author.send(help_message)
 

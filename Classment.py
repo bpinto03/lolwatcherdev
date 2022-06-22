@@ -72,7 +72,6 @@ class LolRankings(commands.Cog):
     async def ranking_scheduler_func(self):
         """Function used by scheduler.
         Send embed message of ranking to all guilds the bot can see.
-        Rankings are send on default channel of servers. (Change coming)
         """
         # Send embed message to every servers
         for guild in self.bot.guilds:
@@ -87,7 +86,7 @@ class LolRankings(commands.Cog):
             # If guild id is not registered
             if channel != None and guild.id not in self.players.keys():
                 self.players[guild.id] = []
-                print("Scheduler function registering " + str(guild.id))
+                print("Scheduler function registered " + str(guild.id))
                 return
             
             # Register players's lp
@@ -101,7 +100,7 @@ class LolRankings(commands.Cog):
                 player['lp'] = lp
                     
             if channel.permissions_for(guild.me).send_messages:
-                    embed_to_display = self.embed_ranking(self.compare_LP_in_DB_with_actual_LP(guild.id)) # Compare LP with database
+                    embed_to_display = self.embed_lp_ranking(self.compare_LP_in_DB_with_actual_LP(guild.id)) # Compare LP with database
                     if embed_to_display != discord.Embed.Empty:
                         await channel.send(embed=embed_to_display)
                     else:
@@ -142,10 +141,7 @@ class LolRankings(commands.Cog):
     @commands.command(name = "setChannelDiffusion", aliases=['scd', 'setcd'])
     @commands.has_permissions(manage_channels=True)
     async def set_channel_diffusion(self, ctx):
-        """Set a channel diffusion to display ranking at midnight.
-
-        Args:
-            ctx (discord.context): Context of the command.
+        """Set a channel diffusion to display ranking at midnight. *usage for more information
         """
         guild = ctx.guild
         if guild != None:
@@ -164,12 +160,10 @@ class LolRankings(commands.Cog):
                                         "guild_id = '" + str(guild.id) + "'" )
             await ctx.channel.send("Diffusion channel for ranking modified.")
             
-    @commands.command(name = "cpr", aliases=['clearPlayerRanking', 'Cpr', 'CPR'])
+    @commands.command(name = "clearLPRanking", aliases=['clpr', 'clearlpranking'])
+    @commands.has_permissions(manage_messages=True)
     async def clear_lp_ranking(self, ctx):
-        """Clear the ranking
-
-        Args:
-            ctx (discord.context): Context of message.
+        """Clear the lp ranking. *usage for more information
         """
         guild = ctx.guild
         if guild != None:
@@ -180,11 +174,11 @@ class LolRankings(commands.Cog):
             for player in self.players[guild.id]:
                 sql.update_values_on_table(self.bot.cnx, "ranking_registered", "last_lp_saved = {0}".format(player['lp']), "guild_id = '{0}' AND username = '{1}'"
                                                .format(guild.id, player['username'])) # Update database values
-            await ctx.channel.send("Cleared ranking.")
+            await ctx.channel.send("Cleared LP ranking.")
     
     # ==== ADD PART ====
     def add_player_to_DB(self, guild_id : int, username : str, lp : int):
-        """Add player with username to database if the ^player is already in table it update his LP.
+        """Add player with username to database if the player is already in table it update his LP.
 
         Args:
             guild_id (int): _description_
@@ -213,13 +207,9 @@ class LolRankings(commands.Cog):
         self.players[guild_id].append({'username' : username, 'lp' : lp})
         self.add_player_to_DB(guild_id, username, lp)
         
-    @commands.command(name = "apr", aliases=['addPlayerRanking', 'Apr', 'APR'])
+    @commands.command(name = "addPlayerRanking", aliases=['apr'])
     async def add_player_ranking(self, ctx, *args):
-        """Command to add player to ranking.
-
-        Args:
-            ctx (discord.context): Context of the command.
-            *args : Username to add.
+        """Add player to ranking. *usage for more information
         """
         username = " ".join(args)
         guild = ctx.guild
@@ -270,13 +260,9 @@ class LolRankings(commands.Cog):
         self.players[guild_id].remove({'username' : username, 'lp' : lp})
         self.remove_player_from_DB(guild_id, username)
     
-    @commands.command(name="rpr", aliases=['removePlayerRanking', 'RPR', 'Rpr'])
+    @commands.command(name="removePlayerRanking", aliases=['rpr'])
     async def remove_player_ranking(self, ctx, *args):
-        """Remove a player from the ranking.
-
-        Args:
-            ctx (discord.ctx): Discord context of command.
-            *args (str): Username to remove. 
+        """Remove a player from the ranking. *usage for more information
         """
         username = " ".join(args)
         guild = ctx.guild
@@ -291,12 +277,10 @@ class LolRankings(commands.Cog):
             await ctx.channel.send("Error while trying to delete " + username)
             print("Error while removing" + username + " in " + guild.id)
     
-    @commands.command(name="resetR", aliases=['resetRanking', 'rR', 'RR'])
+    @commands.command(name="resetRanking", aliases=['rr'])
+    @commands.has_permissions(kick_members=True)
     async def reset_ranking(self, ctx):
-        """Remove all players of ranking.
-
-        Args:
-            ctx (dicord.context): Contexte of command.
+        """Remove all players in ranking system. *usage for more information
         """
         guild = ctx.guild
         if guild != None:
@@ -313,7 +297,7 @@ class LolRankings(commands.Cog):
             print("Error with reset " + guild.id)
     
     # ==== DISPLAY PART ====
-    def embed_ranking(self, players : list):
+    def embed_lp_ranking(self, players : list):
         """Create an embed ranking to send on channel
 
         Args:
@@ -337,7 +321,7 @@ class LolRankings(commands.Cog):
         embed.set_footer(text="Number of lp won today")
         return embed
     
-    @commands.command(name = "dispPR", aliases=['displayPlayerRanking', 'Dpr', 'dpr', 'DPR'])
+    @commands.command(name = "displayPlayersRegisteredRanking", aliases=['dprr'])
     async def display_player_registered_ranking(self, ctx, username=None):
         """Display all players registered in ranking system or if username is specified check if
         he is in ranking system.
@@ -363,14 +347,9 @@ class LolRankings(commands.Cog):
                         await ctx.channel.send("Player **" + username + "** is not in ranking system.")
                 
     
-    @commands.command(name = "dispR", aliases=['displayRanking', 'Dr', 'dr', 'DR'])
+    @commands.command(name = "displayRanking", aliases=['dispR', 'dr'])
     async def display_ranking_of_the_day(self, ctx):
-        """Display a ranking of players that won more lp on the day.
-        Ranking can be empty if there is no players registered or if players did not play.
-        When you first register a player, is LP gained is 0, we do not see past games.
-
-        Args:
-            ctx (discord.context): Context of command.
+        """Display a ranking of players that won more lp on the day. *usage for more information
         """
         guild = ctx.guild
         if guild != None:
@@ -385,7 +364,7 @@ class LolRankings(commands.Cog):
                     self.remove_renamed_player(player)
                     continue
                 player['lp'] = lp
-            embed_to_display = self.embed_ranking(self.compare_LP_in_DB_with_actual_LP(ctx.guild.id))
+            embed_to_display = self.embed_lp_ranking(self.compare_LP_in_DB_with_actual_LP(ctx.guild.id))
             if embed_to_display != discord.Embed.Empty:
                 await ctx.channel.send(embed=embed_to_display)
             else:
