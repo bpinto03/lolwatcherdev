@@ -1,16 +1,22 @@
 # -- coding: utf-8 --
-import discord
 import os
 import time
 
+# Bot modules
 from Classment import LolRankings
-import mysql_operations as sql
-
+from PromoteTracking import PromoteTracker
+import MysqlOperations as sql
+from Ranking import *
 from PlayerLeagueInfo import *
 from MatchLeagueInfo import *
+
+
+# Riot and Discord api
 from riotwatcher import LolWatcher, ApiError
 from discord.ext import commands
+import discord
 
+# Scheduler
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
@@ -22,7 +28,7 @@ from apscheduler.triggers.cron import CronTrigger
 # === todo list ===
 # lp par jour (avec match_v5 de l'api lol)) (FAIT)
 # historique match fini - de 15 min (On going)
-# notif auto si demo / rankup
+# notif auto si demo / promote (On going)
 
 # api match_V5 de lol pour historique des parties
 
@@ -30,7 +36,7 @@ class BotWatcher(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix="*")
         #self.watcher = LolWatcher(os.environ['RIOT_API_KEY'])  #Change with your DEV key (go to lol dev portal)
-        self.watcher = LolWatcher("RGAPI-4e773a1a-44d3-4462-9177-2328336caacb")  #Change with your DEV key (go to lol dev portal)
+        self.watcher = LolWatcher("RGAPI-592eb7bf-fc0a-41cf-a193-b19a7d0ea362")  #Change with your DEV key (go to lol dev portal)
         self.region = "euw1"
         self.colormap = {"IRON":discord.Colour.from_rgb(54, 37, 33),
                          "BRONZE":discord.Colour.from_rgb(66, 27, 18),
@@ -68,6 +74,48 @@ class BotWatcher(commands.Bot):
                2 if roman == "II" else \
                3 if roman == "III" else \
                4 if roman == "IV" else ""
+               
+    def get_diffusion_channel(self, guild_id : int):
+        """Get for a given guild_id the diffusion channel.
+
+        Args:
+            guild_id (int): guild_id to check diffusion channel.
+            
+        Returns:
+            int : diffusion channel for guild_id. or -1 if there is not
+        """
+        ret = sql.select_values_from_table(self.cnx,
+                                                "ranking_diffusion",
+                                                ["channel_diffusion"],
+                                                "guild_id = '" + str(guild_id) + "'")
+        if ret == []:
+            return -1
+        return int(ret[0][0])
+    
+    def get_lp(self, username : str):
+        """Get current lp of username.
+
+        Args:
+            username (str): Username to get lp.
+
+        Returns:
+            int: Number of Lp or < 0 if username not found.
+        """
+        player = PlayerLeagueInfo(username)
+        try:
+            userToWatch = self.watcher.summoner.by_name(self.region, username)
+        except Exception as e:
+            print(e)
+            return -1
+        
+        for data in self.watcher.league.by_summoner(self.region, userToWatch['id']):
+            if data['queueType'] == "RANKED_SOLO_5x5":
+                player.loadData(data)
+                break
+            
+        if not player.empty:
+            return Ranking.rank_to_LP(player.tier, player.rank, player.lp)
+        return 0
 
     def watch_ranked_stats(self, asker : str, alias : str, username : str, region : str ="euw1"):
         """Get all ranked information of username.
@@ -121,6 +169,9 @@ class BotWatcher(commands.Bot):
         # Init rankings commands
         ranking = LolRankings(self)
         self.add_cog(ranking)   # Load all commands from Rankings to Bot
+        promotetracker = PromoteTracker(self)
+        promotetracker.init_lp_track()
+        #self.add_cog(promotetracker)
         
         # Execute classements.ranking_scheduler_func every day at 00:00
         self.scheduler.add_job(ranking.ranking_scheduler_func, CronTrigger.from_crontab("0 22 * * *")) #22 = 00:00 CEST
@@ -190,7 +241,7 @@ async def send_rank(ctx, *args):
     if embed_message != discord.Embed.Empty:
         await ctx.channel.send(embed=embed_message)
     else:
-        await ctx.channel.send("User not found on riot servers.")
+        await ctx.channel.send("User " + username + " not found on riot servers.")
     
 #lolw.run(os.environ['BOT_API_KEY']) #For Prod
 lolw.run("OTQ0Nzc3OTkzMzM3ODM1NTMw.YhGjEg.QMXYukVeryN5Nngady999-R0cVE") # For tests

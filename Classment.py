@@ -1,6 +1,7 @@
 import discord
-import mysql_operations as sql
+import MysqlOperations as sql
 import datetime
+
 from discord.ext import commands
 from Ranking import *
 from PlayerLeagueInfo import *
@@ -27,47 +28,6 @@ class LolRankings(commands.Cog):
                 self.players[guild.id].append({'username':username, 'lp':last_lp})
         
     # ==== UTILITY PART ====
-    def get_lp(self, username : str):
-        """Get current lp of username.
-
-        Args:
-            username (str): Username to get lp.
-
-        Returns:
-            int: Number of Lp or < 0 if username not found.
-        """
-        player = PlayerLeagueInfo(username)
-        try:
-            userToWatch = self.bot.watcher.summoner.by_name(self.bot.region, username)
-        except Exception as e:
-            print(e)
-            return -1
-        
-        for data in self.bot.watcher.league.by_summoner(self.bot.region, userToWatch['id']):
-            if data['queueType'] == "RANKED_SOLO_5x5":
-                player.loadData(data)
-                break
-            
-        if not player.empty:
-            return Ranking.rank_to_LP(player.tier, player.rank, player.lp)
-        return 0
-    
-    def get_diffusion_channel(self, guild_id : int):
-        """Get for a given guild_id the diffusion channel.
-
-        Args:
-            guild_id (int): guild_id to check diffusion channel.
-            
-        Returns:
-            int : diffusion channel for guild_id. or -1 if there is not
-        """
-        ret = sql.select_values_from_table(self.bot.cnx,
-                                                "ranking_diffusion",
-                                                ["channel_diffusion"],
-                                                "guild_id = '" + str(guild_id) + "'")
-        if ret == []:
-            return -1
-        return int(ret[0][0])
        
     async def ranking_scheduler_func(self):
         """Function used by scheduler.
@@ -75,7 +35,7 @@ class LolRankings(commands.Cog):
         """
         # Send embed message to every servers
         for guild in self.bot.guilds:
-            channel_id = self.get_diffusion_channel(guild.id) # Get default channel_id
+            channel_id = self.bot.get_diffusion_channel(guild.id) # Get default channel_id
             
             # If there is no channel_id
             if channel_id == -1:
@@ -92,7 +52,7 @@ class LolRankings(commands.Cog):
             # Register players's lp
             players = self.players[guild.id]
             for player in players:
-                lp = self.get_lp(player['username']) # Actualise LP
+                lp = self.bot.get_lp(player['username']) # Actualise LP
                 # Remove if there is error with player
                 if lp < 0:
                     self.remove_renamed_player(player)
@@ -150,7 +110,7 @@ class LolRankings(commands.Cog):
                 print("set_channel_diffusion registered "  + str(guild.id))
             channel_id = ctx.channel.id
             
-            if self.get_diffusion_channel(guild.id) == -1:
+            if self.bot.get_diffusion_channel(guild.id) == -1:
                 sql.add_values_on_table(self.bot.cnx, "ranking_diffusion", [str(guild.id), str(channel_id)])
                 
             else:
@@ -203,7 +163,7 @@ class LolRankings(commands.Cog):
             username (str): Username to add.
         """
         
-        lp = self.get_lp(username)
+        lp = self.bot.get_lp(username)
         self.players[guild_id].append({'username' : username, 'lp' : lp})
         self.add_player_to_DB(guild_id, username, lp)
         
@@ -359,7 +319,7 @@ class LolRankings(commands.Cog):
                 return
             
             for player in self.players[ctx.guild.id]:
-                lp = self.get_lp(player['username']) # Actualise Lp of player before sending
+                lp = self.bot.get_lp(player['username']) # Actualise Lp of player before sending
                 if lp < 0:
                     self.remove_renamed_player(player)
                     continue
