@@ -1,6 +1,7 @@
 class Ranking:
-    DIVISION = ['IV', 'III', 'II', 'I']
+    DIVISION = ['IV', 'III', 'II', 'I', '0']
     TIER = {
+            'DEFAULT' : 0,
             'IRON': 0,
             'BRONZE': 400,
             'SILVER': 800,
@@ -32,8 +33,8 @@ class Ranking:
             raise ValueError(tier + ' tier do not exist')
         lp = int(rest)
         if not Ranking.__is_high_elo(tier):
-            if lp < 0 or 99 < lp:
-                raise ValueError('lp should be between 0 and 99 for low elo')
+            if lp < 0 or 100 < lp:  #100 for placement game
+                raise ValueError('lp should be between 0 and 100 for low elo')
             lp += Ranking.__compute_division(division)
         return lp + Ranking.TIER[tier]
 

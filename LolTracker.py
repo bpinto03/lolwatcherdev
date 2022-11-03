@@ -34,9 +34,9 @@ from apscheduler.triggers.cron import CronTrigger
 
 class BotWatcher(commands.Bot):
     def __init__(self):
-        super().__init__(command_prefix="*")
+        super().__init__(command_prefix="*", intents=discord.Intents.all())
         #self.watcher = LolWatcher(os.environ['RIOT_API_KEY'])  #Change with your DEV key (go to lol dev portal)
-        self.watcher = LolWatcher("RGAPI-592eb7bf-fc0a-41cf-a193-b19a7d0ea362")  #Change with your DEV key (go to lol dev portal)
+        self.watcher = LolWatcher("RGAPI-6284e0a0-2f90-49ab-b34d-1ae309188260")  #Change with your DEV key (go to lol dev portal)
         self.region = "euw1"
         self.colormap = {"IRON":discord.Colour.from_rgb(54, 37, 33),
                          "BRONZE":discord.Colour.from_rgb(66, 27, 18),
@@ -92,6 +92,21 @@ class BotWatcher(commands.Bot):
             return -1
         return int(ret[0][0])
     
+    def get_division(self, username : str):
+        """Get current divison of username.
+
+        Args:
+            username (str): Username to get lp.
+
+        Returns:
+            str: Division or "" if username not found.
+        """
+        player = PlayerLeagueInfo(username)
+        player.loadData(self.watcher, username, self.region)
+        if not player.empty:
+            return player.tier + " " + player.rank
+        return ""
+                
     def get_lp(self, username : str):
         """Get current lp of username.
 
@@ -102,22 +117,13 @@ class BotWatcher(commands.Bot):
             int: Number of Lp or < 0 if username not found.
         """
         player = PlayerLeagueInfo(username)
-        try:
-            userToWatch = self.watcher.summoner.by_name(self.region, username)
-        except Exception as e:
-            print(e)
-            return -1
-        
-        for data in self.watcher.league.by_summoner(self.region, userToWatch['id']):
-            if data['queueType'] == "RANKED_SOLO_5x5":
-                player.loadData(data)
-                break
+        player.loadData(self.watcher, username, self.region)
             
         if not player.empty:
             return Ranking.rank_to_LP(player.tier, player.rank, player.lp)
-        return 0
+        return -1
 
-    def watch_ranked_stats(self, asker : str, alias : str, username : str, region : str ="euw1"):
+    def watch_ranked_stats(self, asker : str, alias : str, username : str):
         """Get all ranked information of username.
 
         Args:
@@ -133,23 +139,15 @@ class BotWatcher(commands.Bot):
             Bryan
         """
         player = PlayerLeagueInfo(username)
+        player.loadData(self.watcher, username, self.region)
         
-        try :
-            userToWatch = self.watcher.summoner.by_name(region, username)   # Gets Riot user info
-        except:
-            return discord.Embed.Empty
-        
+        if player.empty:
+            return None
         rank_link = 'DEFAULT'
-        
-        for data in self.watcher.league.by_summoner(region, userToWatch['id']):
-            if data['queueType'] == "RANKED_SOLO_5x5":
-                player.loadData(data)
-                break
-
         descr = str(player)
 
         # Set image rank link
-        if not player.empty:
+        if player.tier != 'DEFAULT':
             rank_link = '{}_{}'.format(player.tier, BotWatcher.roman_to_number(str(player.rank)))# RANK_TIER ex: DIAMOND_1
         embed = discord.Embed( title="Rank of " + username, description=descr, colour=self.colormap[player.tier])
         embed.set_thumbnail(url="https://opgg-static.akamaized.net/images/medals/" + \
@@ -168,16 +166,15 @@ class BotWatcher(commands.Bot):
         #self.notif_new_ranked_game_played()
         # Init rankings commands
         ranking = LolRankings(self)
-        self.add_cog(ranking)   # Load all commands from Rankings to Bot
+        await self.add_cog(ranking)   # Load all commands from Rankings to Bot
         promotetracker = PromoteTracker(self)
         promotetracker.init_lp_track()
         #self.add_cog(promotetracker)
         
         # Execute classements.ranking_scheduler_func every day at 00:00
-        self.scheduler.add_job(ranking.ranking_scheduler_func, CronTrigger.from_crontab("0 22 * * *")) #22 = 00:00 CEST
+        self.scheduler.add_job(ranking.ranking_scheduler_func, CronTrigger.from_crontab("0 23 * * *")) #22 = 00:00 CEST
         # Add new jobs here
         self.scheduler.start()  # Start all jobs
-        
     
     async def on_message(self, ctx):
         """Executed when a message is posted  
@@ -238,10 +235,10 @@ async def send_rank(ctx, *args):
     username = " ".join(args)
     discord_user = ctx.author
     embed_message = lolw.watch_ranked_stats(discord_user.name, discord_user.display_name, username)
-    if embed_message != discord.Embed.Empty:
+    if embed_message != None:
         await ctx.channel.send(embed=embed_message)
     else:
-        await ctx.channel.send("User " + username + " not found on riot servers.")
+        await ctx.channel.send("User **" + username + "** not found on riot servers.")
     
 #lolw.run(os.environ['BOT_API_KEY']) #For Prod
 lolw.run("OTQ0Nzc3OTkzMzM3ODM1NTMw.YhGjEg.QMXYukVeryN5Nngady999-R0cVE") # For tests

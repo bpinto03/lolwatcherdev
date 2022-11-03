@@ -9,27 +9,38 @@ class PlayerLeagueInfo():
         self.user = user
         self.empty = True
         self.tier = 'DEFAULT'
-        self.rank = 0
+        self.rank = '0'
         self.wins = 0
         self.losses = 0
         self.lp = 0
 
-    def loadData(self, data:dict) -> None:
+    def loadData(self, watcher, username : str, region : str) -> None:
         """Load ranking information in this object
 
         Args:
             self (PlayerLeagueInfo): this object
-            data (dict): ranking information
+            watcher (lol.watcher): watcher to get datas of username
+            username (str): In game username
         
         Author:
             Matchi
         """
+        try :
+            userToWatch = watcher.summoner.by_name(region, username)
+        except Exception as e:
+            print("PlayerLeaugeInfo " + str(e))
+            return
+        
         self.empty = False
-        self.tier = data['tier']
-        self.rank = data['rank']
-        self.wins = data['wins']
-        self.losses = data['losses']
-        self.lp = data['leaguePoints']
+        # If user is ranked
+        for data in watcher.league.by_summoner(region, userToWatch['id']):
+            if data['queueType'] == "RANKED_SOLO_5x5":
+                self.tier = data['tier']
+                self.rank = data['rank']
+                self.wins = data['wins']
+                self.losses = data['losses']
+                self.lp = data['leaguePoints']
+                return
 
     def winrate(self) -> float:
         """Return the winrate of the player
@@ -47,7 +58,7 @@ class PlayerLeagueInfo():
                 else round(100 * self.wins / (self.wins + self.losses), 2)
 
     def __str__(self) -> str:
-        if self.empty:
+        if self.tier == 'DEFAULT':
             return '{} n\'est pas classé.'.format(self.user)
         res = [
             "\nWins : {}".format(self.wins),

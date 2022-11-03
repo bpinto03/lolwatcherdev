@@ -3,8 +3,8 @@ import MysqlOperations as sql
 import datetime
 
 from discord.ext import commands
+from PlayerLeagueInfo import PlayerLeagueInfo
 from Ranking import *
-from PlayerLeagueInfo import *
 
 CLASSMENT_THUMBNAIL = "https://cdn.icon-icons.com/icons2/2448/PNG/512/winner_podium_icon_148754.png"
 
@@ -61,7 +61,7 @@ class LolRankings(commands.Cog):
                     
             if channel.permissions_for(guild.me).send_messages:
                     embed_to_display = self.embed_lp_ranking(self.compare_LP_in_DB_with_actual_LP(guild.id)) # Compare LP with database
-                    if embed_to_display != discord.Embed.Empty:
+                    if embed_to_display != None:
                         await channel.send(embed=embed_to_display)
                     else:
                         print("Display tab is useless (Nobody played or Nobody in classement) - " + str(guild.id))
@@ -180,8 +180,14 @@ class LolRankings(commands.Cog):
             if username in [u['username'] for u in self.players[guild.id]]:
                 await ctx.channel.send(username + " already in ranking.")
             else:
-                self.add_player_to_ranking(guild.id, username)
-                await ctx.channel.send("Player **" + username + "** added.")
+                # Check if player exist
+                player = PlayerLeagueInfo(username)
+                player.loadData(self.bot.watcher, username, self.bot.region)
+                if not player.empty:
+                    self.add_player_to_ranking(guild.id, username)
+                    await ctx.channel.send("Player **" + username + "** added.")
+                else:
+                    await ctx.channel.send("Player **" + username + "** not found on riot servers.")
         else:
             await ctx.channel.send("Error while trying to add " + username + " in " + guild.id)
             
@@ -275,7 +281,7 @@ class LolRankings(commands.Cog):
             if 0 <= medal <= 2 : 
                 medal += 1
         if descr == "":
-            return discord.Embed.Empty
+            return None
         embed = discord.Embed( title=":military_medal: Ranking of the day :military_medal:", description=descr, color=discord.Colour.dark_red(), timestamp=datetime.datetime.utcnow())
         embed.set_thumbnail(url=CLASSMENT_THUMBNAIL)
         embed.set_footer(text="Number of lp won today")
@@ -325,7 +331,7 @@ class LolRankings(commands.Cog):
                     continue
                 player['lp'] = lp
             embed_to_display = self.embed_lp_ranking(self.compare_LP_in_DB_with_actual_LP(ctx.guild.id))
-            if embed_to_display != discord.Embed.Empty:
+            if embed_to_display != None:
                 await ctx.channel.send(embed=embed_to_display)
             else:
                 await ctx.channel.send("Ranking is empty (nobody played or is registered).")
