@@ -174,6 +174,7 @@ class BotWatcher(commands.Bot):
         
         # Execute classements.ranking_scheduler_func every day at 00:00
         self.scheduler.add_job(ranking.ranking_scheduler_func, CronTrigger.from_crontab("0 23 * * *")) #22 = 00:00 CEST
+        self.scheduler.add_job(promote_tracker.promote_tracker_scheduler_func, CronTrigger.from_crontab("0,15 * * * *"))
         # Add new jobs here
         self.scheduler.start()  # Start all jobs
     
