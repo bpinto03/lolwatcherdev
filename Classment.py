@@ -5,14 +5,16 @@ import datetime
 from discord.ext import commands
 from PlayerLeagueInfo import PlayerLeagueInfo
 from Ranking import *
+from PromoteTracking import PromoteTracker
 
 CLASSMENT_THUMBNAIL = "https://cdn.icon-icons.com/icons2/2448/PNG/512/winner_podium_icon_148754.png"
 
 
 class LolRankings(commands.Cog):
     # ==== INIT PART ====
-    def __init__(self, bot):
+    def __init__(self, bot, promote_tracking : PromoteTracker):
         self.bot = bot
+        self.promote = promote_tracking
         self.players = dict() # dict with guild_id and list of players 'guild_id' : [{'username':Example, 'lp':45}, ...]
         self.medal_classement = [':first_place:', ':second_place:', ':third_place:', '\u2000\u2000']
         self.init_players_from_database() # Load all players in all servers
@@ -166,6 +168,7 @@ class LolRankings(commands.Cog):
         lp = self.bot.get_lp(username)
         self.players[guild_id].append({'username' : username, 'lp' : lp})
         self.add_player_to_DB(guild_id, username, lp)
+        self.promote.add_user(guild_id, username)
         
     @commands.command(name = "addPlayerRanking", aliases=['apr'])
     async def add_player_ranking(self, ctx, *args):
@@ -225,6 +228,7 @@ class LolRankings(commands.Cog):
                 break
         self.players[guild_id].remove({'username' : username, 'lp' : lp})
         self.remove_player_from_DB(guild_id, username)
+        self.promote.remove_user(guild_id, username)
     
     @commands.command(name="removePlayerRanking", aliases=['rpr'])
     async def remove_player_ranking(self, ctx, *args):
@@ -255,6 +259,8 @@ class LolRankings(commands.Cog):
                 self.players[guild.id] = []
                 print("reset_ranking registered "  + str(guild.id))
                 return
+            for player in [u['username'] for u in self.players[guild_id]]:
+                self.promote.remove_user(guild_id, player)
             self.players[guild_id] = []
             sql.delete_values_on_table(self.bot.cnx, "ranking_registered", "guild_id = '{0}'".format(guild_id))
             await ctx.channel.send("All players are deleted.")

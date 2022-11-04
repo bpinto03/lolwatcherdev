@@ -1,7 +1,7 @@
 class Ranking:
     DIVISION = ['IV', 'III', 'II', 'I', '0']
     TIER = {
-            'DEFAULT' : 0,
+            'DEFAULT' : -1,
             'IRON': 0,
             'BRONZE': 400,
             'SILVER': 800,
@@ -15,7 +15,7 @@ class Ranking:
 
     @classmethod
     def __compute_division(cls, division:str) -> int:
-        return int(Ranking.DIVISION.index(division)) * 100
+        return int(Ranking.DIVISION.index(division) % (len(cls.DIVISION) - 1)) * 100
 
     @classmethod
     def __is_high_elo(cls, tier:str) -> bool:
@@ -54,3 +54,11 @@ class Ranking:
             lp -= index * 100
         res['lp'] = str(lp)
         return res
+
+    @classmethod
+    def compare_division(cls, division1 : str, division2 : str):
+        return cls.__compute_division(division1) - cls.__compute_division(division2)
+    
+    @classmethod
+    def compare_tier(cls, tier1 : str, tier2 : str):
+        return cls.TIER[tier1] - cls.TIER[tier2]

@@ -92,7 +92,7 @@ class BotWatcher(commands.Bot):
             return -1
         return int(ret[0][0])
     
-    def get_division(self, username : str):
+    def get_string_rank(self, username : str):
         """Get current divison of username.
 
         Args:
@@ -164,12 +164,13 @@ class BotWatcher(commands.Bot):
         print("Ready to spy")
         
         #self.notif_new_ranked_game_played()
+        
+        promote_tracker = PromoteTracker(self)
+        await self.add_cog(promote_tracker)
+        
         # Init rankings commands
-        ranking = LolRankings(self)
+        ranking = LolRankings(self, promote_tracker)
         await self.add_cog(ranking)   # Load all commands from Rankings to Bot
-        promotetracker = PromoteTracker(self)
-        promotetracker.init_lp_track()
-        #self.add_cog(promotetracker)
         
         # Execute classements.ranking_scheduler_func every day at 00:00
         self.scheduler.add_job(ranking.ranking_scheduler_func, CronTrigger.from_crontab("0 23 * * *")) #22 = 00:00 CEST
