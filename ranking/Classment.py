@@ -1,11 +1,10 @@
 import discord
-import MysqlOperations as sql
+from utils import MysqlOperations as sql
 import datetime
 
 from discord.ext import commands
-from PlayerLeagueInfo import PlayerLeagueInfo
-from Ranking import *
-from PromoteTracking import PromoteTracker
+from utils.PlayerLeagueInfo import PlayerLeagueInfo
+from promote.PromoteTracking import PromoteTracker
 
 CLASSMENT_THUMBNAIL = "https://cdn.icon-icons.com/icons2/2448/PNG/512/winner_podium_icon_148754.png"
 

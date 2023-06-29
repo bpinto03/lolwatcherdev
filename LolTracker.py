@@ -1,18 +1,14 @@
 # -- coding: utf-8 --
-import os
-import time
 
 # Bot modules
-from Classment import LolRankings
-from PromoteTracking import PromoteTracker
-import MysqlOperations as sql
-from Ranking import *
-from PlayerLeagueInfo import *
-from MatchLeagueInfo import *
-
+from ranking.Classment import LolRankings
+from promote.PromoteTracking import PromoteTracker
+from utils import MysqlOperations as sql
+from ranking.Ranking import *
+from utils.PlayerLeagueInfo import *
 
 # Riot and Discord api
-from riotwatcher import LolWatcher, ApiError
+from riotwatcher import LolWatcher
 from discord.ext import commands
 import discord
 
@@ -20,22 +16,10 @@ import discord
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-# Ajoutez ce que vous voulez comme fonctions dans la classe du bot généralement c'est les + grosses fonctions qui process.
-# Les commandes sont là pour mettre le serveur discord en relation avec le bot (En gros c'est pas censé faire bcp de lignes faites au mieux mdrr)
-# Pour grouper les commandes, vous pouvez faire des modules avec l'objet discord.Cog (Allez regarder la doc)
-# Mettez des commentaires si vous êtes deter, c'est cool pour les autres
-
-# === todo list ===
-# lp par jour (avec match_v5 de l'api lol)) (FAIT)
-# historique match fini - de 15 min (On going)
-# notif auto si demo / promote (On going)
-
-# api match_V5 de lol pour historique des parties
-
 class BotWatcher(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix="*", intents=discord.Intents.all())
-        #self.watcher = LolWatcher(os.environ['RIOT_API_KEY'])  #Change with your DEV key (go to lol dev portal)
+        #self.watcher = LolWatcher(os.environ['RIOT_API_KEY'])
         self.watcher = LolWatcher("RGAPI-6284e0a0-2f90-49ab-b34d-1ae309188260")  #Change with your DEV key (go to lol dev portal)
         self.region = "euw1"
         self.colormap = {"IRON":discord.Colour.from_rgb(54, 37, 33),
@@ -244,6 +228,3 @@ async def send_rank(ctx, *args):
     
 #lolw.run(os.environ['BOT_API_KEY']) #For Prod
 lolw.run("OTQ0Nzc3OTkzMzM3ODM1NTMw.YhGjEg.QMXYukVeryN5Nngady999-R0cVE") # For tests
-# Si vous voulez créer un bot de test vous pouvez en générer une dans le developer portal de discord (faut créer une app puis un bot dans l'app).
-# Dans ce cas, l'appli sera link avec votre bot
-# Comme le bot est en ligne sur heroku jsp si c'est votre instance qui sera utilisée quand vous lancez le programme.

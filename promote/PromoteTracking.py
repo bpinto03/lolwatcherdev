@@ -1,7 +1,7 @@
 import discord
-import MysqlOperations as sql
+from utils import MysqlOperations as sql
 from discord.ext import commands
-from Ranking import *
+from ranking.Ranking import *
 import datetime
 
 class PromoteTracker(commands.Cog):
